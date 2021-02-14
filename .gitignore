@@ -4,7 +4,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 pregraite/
-train.py
+logs
+board_logs
+resnet18_centernet.h5
+Callbacks/
 
 # C extensions
 *.so

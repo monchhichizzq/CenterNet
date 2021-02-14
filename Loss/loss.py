@@ -57,6 +57,7 @@ def reg_l1_loss(y_pred, y_true, indices, mask):
 
     y_pred = tf.gather(tf.reshape(y_pred, [-1,c]),full_indices)
     y_pred = tf.reshape(y_pred, [b, -1, c])
+    print('mask', mask)
 
     mask = tf.tile(tf.expand_dims(mask, axis=-1), (1, 1, 2))
     #-------------------------------------------------------------------------#
@@ -67,9 +68,9 @@ def reg_l1_loss(y_pred, y_true, indices, mask):
     return reg_loss
 
 
-class CenterNet_Loss:
-    def __init__(self):
-        pass
+class CenterNet_Loss(object):
+    def __init__(self, num_classes):
+        self.num_classes =num_classes
 
     def main(self, y_true, y_pred):
         # y_pred: [hm_pred, wh_pred, reg_pred]
@@ -85,8 +86,21 @@ class CenterNet_Loss:
         #   indices：真实值对应的坐标     (batch_size, max_objects)
         #-----------------------------------------------------------------------------------------------------------------#
         # hm_pred, wh_pred, reg_pred, hm_true, wh_true, reg_true, reg_mask, indices = args
-        hm_pred, wh_pred, reg_pred = y_pred
-        hm_true, wh_true, reg_true, reg_mask, indices = y_true
+        print(y_true.shape, y_pred.shape)
+        hm_pred = y_pred[..., :self.num_classes]
+        wh_pred = y_pred[..., self.num_classes:self.num_classes+2]
+        reg_pred = y_pred[..., self.num_classes+2:self.num_classes+4]
+
+        print(hm_pred)
+        print(wh_pred)
+        print(reg_pred)
+
+        hm_true = y_true[0]
+        wh_true = y_true[1]
+        reg_true = y_true[2]
+        reg_mask = y_true[3]
+        indices = y_true[4]
+        print(hm_true)
 
         hm_loss = focal_loss(hm_pred, hm_true)
         wh_loss = 0.1 * reg_l1_loss(wh_pred, wh_true, indices, reg_mask)
@@ -96,17 +110,21 @@ class CenterNet_Loss:
         return total_loss, hm_loss, wh_loss, reg_loss
 
     def total_loss(self, y_true, y_pred):
+        print('total_loss', y_true, y_pred)
         total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
         return total_loss
 
     def hm_loss(self, y_true, y_pred):
-        total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
-        return hm_loss
+        print('hm', y_true, y_pred)
+        # total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
+        #return hm_loss
 
     def wh_loss(self, y_true, y_pred):
-        total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
-        return wh_loss
+        print('wh', y_true, y_pred)
+        # total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
+        # return wh_loss
 
     def reg_loss(self, y_true, y_pred):
-        total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
-        return reg_loss
+        print('reg', y_true, y_pred)
+        #total_loss, hm_loss, wh_loss, reg_loss = self.main(y_true, y_pred)
+        #return reg_loss

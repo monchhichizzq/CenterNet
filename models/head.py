@@ -14,7 +14,7 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.layers import ReLU
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.layers import Sigmoid
+from tensorflow.keras.activations import sigmoid
 
 
 # Multi-scale feature maps fusion
@@ -43,7 +43,7 @@ def centernet_head(x,num_classes):
     y1 = BatchNormalization(name=hm_name+'_bn')(y1)
     y1 = ReLU(name=hm_name+'_relu')(y1)
     y1 = Conv2D(num_classes, 1, kernel_initializer='he_normal', kernel_regularizer=l2(5e-4), name=hm_name + '_out')(y1)
-    y1 = Sigmoid()(y1)
+    y1 = sigmoid(y1)
 
     # wh header
     wh_name = 'wh_header'
@@ -58,4 +58,8 @@ def centernet_head(x,num_classes):
     y3 = BatchNormalization(name=reg_name+'_bn')(y3)
     y3 = ReLU(name=reg_name+'_relu')(y3)
     y3 = Conv2D(2, 1, kernel_initializer='he_normal', kernel_regularizer=l2(5e-4), name=reg_name+'_out')(y3)
+
+    # model.get_layer('hm_header_out')
+    # model.get_layer('wh_header_out')
+    # model.get_layer('reg_header_out')
     return y1, y2, y3

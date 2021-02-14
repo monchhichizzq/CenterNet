@@ -51,7 +51,7 @@ def ResNet18(inputs):
     #  layer_params=[2, 2, 2, 2]
 
     # 448, 448, 3 --> 224, 224, 64
-    x = Conv2D(64, (7, 7), strides=(2, 2), name='conv1', use_bias=False)(inputs)
+    x = Conv2D(64, (7, 7), strides=(2, 2), padding="same", name='conv1', use_bias=False)(inputs)
     x = BatchNormalization(name='conv1_bn')(x)
     x = ReLU(name='conv1_relu')(x)
 

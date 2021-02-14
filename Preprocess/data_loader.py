@@ -7,7 +7,7 @@
 
 import sys
 sys.path.append('../../CenterNet')
-
+import logging
 import os
 import cv2
 import math
@@ -15,7 +15,7 @@ import numpy as np
 from tensorflow.keras.utils import Sequence
 from Preprocess.utils import Data_augmentation
 from Preprocess.mosaic_utils import Data_augmentation_with_Mosaic
-from Preprocess.preprocess_yolo_boxes import preprocess_true_boxes, get_anchors, get_classes
+from Utils.utils import get_classes
 from Preprocess.gt_utils import draw_gaussian, gaussian_radius
 from Preprocess.utils import preprocess_image
 
@@ -27,6 +27,9 @@ from Preprocess.utils import preprocess_image
 def rand(a=0, b=1):
     return np.random.rand()*(b-a) + a
 
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger('CenterNet-DataLoader')
+logger.setLevel(logging.DEBUG)
 
 class Coco_DataGenerator(Sequence):
     def __init__(self, train, batch_size, plot = False, **kwargs):
@@ -52,20 +55,24 @@ class Coco_DataGenerator(Sequence):
         classes_path = kwargs.get('classes_path', 'Preparation/data_txt/coco2017_classes.txt')
         class_names = get_classes(classes_path)
         self.num_classes = len(class_names)
-        print('Class names: \n {} \n Number of class: {} '.format(class_names, self.num_classes))
+        # print('Class names: \n {} \n Number of class: {} '.format(class_names, self.num_classes))
+        logger.info('Activate mosaic: {}'.format(self.mosaic))
+
 
         if train:
             self.shuffle = True
             # self.image_ids = open(os.path.join(self.data_path, 'ImageSets/Main/trainval.txt')).read().strip().split()
             self.annotation_lines = open(os.path.join(self.annotation_path, self.anno_train_txt)).readlines()
             self.num_train = len(self.annotation_lines)
-            print('Num train: ', len(self.annotation_lines))
+            logger.info('Num train: {}'.format(len(self.annotation_lines)))
+
         else:
             self.shuffle = False
             # self.image_ids = open(os.path.join(self.data_path, 'ImageSets/Main/test.txt')).read().strip().split()
             self.annotation_lines = open(os.path.join(self.annotation_path, self.anno_val_txt)).readlines()
             self.num_val = len(self.annotation_lines)
-            print('Num validation: ', len(self.annotation_lines))
+            logger.info('Number of class: {} '.format(self.num_classes))
+            logger.info('Num val: {}'.format(len(self.annotation_lines)))
 
         self.on_epoch_end()
 
@@ -200,8 +207,10 @@ class Coco_DataGenerator(Sequence):
             batch_images[b] = preprocess_image(img)
             b = b + 1
             if b == self.batch_size:
-                return batch_images, [batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices]
-
+                #ground_truth = np.concatenate([batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices])
+                #print(ground_truth.shape)
+                # return [batch_images, batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices], np.zeros((self.batch_size,))
+                return [batch_images, batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices], np.zeros(self.batch_size)
 
 if __name__ == '__main__':
 
@@ -217,7 +226,7 @@ if __name__ == '__main__':
     train_generator = Coco_DataGenerator(**train_params)
     _generator = iter(train_generator)
     for i in range(60000):
-        batch_images, batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices = next(_generator)
+        batch_images, [batch_hms, batch_whs, batch_regs, batch_reg_masks, batch_indices] = next(_generator)
         print('')
         print('batch images', batch_images.shape, np.min(batch_images), np.max(batch_images)) # 原始图片
         print('batch heatmaps', batch_hms.shape)  # 中心点高斯热力图 及 classes
