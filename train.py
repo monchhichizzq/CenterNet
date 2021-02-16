@@ -14,6 +14,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
 from Callbacks.checkpoints import ModelCheckpoint
+from Callbacks.mAP_Callbacks import VOC2012mAP_Callback
 from Preprocess.data_loader import Coco_DataGenerator
 from models.centernet import CenterNet
 
@@ -38,11 +39,12 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == "__main__":
     # Hyperparameters
+    training=False
     Lr = 1e-3
     epoch = 500
     input_shape = (448, 448, 3)
     batch_size = 32
-    data_path = 'D:/Coco_dataset/coco_voc/'
+    data_path = 'D:/Coco_dataset/coco_voc'
     annotation_path = 'Preparation/data_txt'
     plot = False
     log_dir = 'logs'
@@ -53,19 +55,24 @@ if __name__ == "__main__":
     num_classes = len(class_names)
 
     # Model
-    model = CenterNet(input_shape, num_classes, max_objects=100)(mode='train')
+    model = CenterNet(input_shape, num_classes, max_objects=100)(mode='train', backbone='ResNet18')
     # model.summary()
     logger.info('Bulid model!')
     # model.save('resnet18_centernet.h5')
     logger.info('Input: {}'.format(model.input))
     logger.info('Output: {}'.format(model.output))
+    if not training:
+        batch_size = 1
+        model_path = "logs/ep009-loss2.774-val_loss6.959.h5"
+        # model_path = "logs/centernet_resnet50_voc.h5"
+        model.load_weights(model_path, by_name=True, skip_mismatch=True)
+        logger.info('Load weights from {} to model'.format(model_path))
 
     # Data loader
     train_params = {'train': True,
                     'batch_size': batch_size,
                     'input_shape': input_shape,
                     'mosaic': True,
-                    'data_path': data_path ,
                     'annotation_path': annotation_path,
                     'classes_path': classes_path,
                     'plot': plot}
@@ -73,7 +80,6 @@ if __name__ == "__main__":
                     'batch_size': batch_size,
                     'input_shape': input_shape,
                     'mosaic': False,
-                    'data_path': data_path,
                     'annotation_path': annotation_path,
                     'classes_path': classes_path,
                     'plot': plot}
@@ -95,6 +101,17 @@ if __name__ == "__main__":
     reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=20, verbose=1)
     early_stopping = EarlyStopping(monitor='val_loss', min_delta=0, patience=6, verbose=1)
 
+    mAP_callback = VOC2012mAP_Callback(input_shape = (448, 448, 3),
+                                        data_path = data_path,
+                                        anntation_path = annotation_path,
+                                        gt_path = "input/ground-truth",
+                                        pre_path = "input/detection-results",
+                                        results_path = 'input/',
+                                        val_txt = 'coco_val.txt',
+                                        classes_path = classes_path,
+                                        command_line = 'python3 get_map.py',
+                                        visual = True)
+
     # Loss
     # center_loss = CenterNet_Loss(num_classes=num_classes)
     # eager mode
@@ -105,9 +122,14 @@ if __name__ == "__main__":
     model.compile(loss={'centernet_loss': lambda y_true, y_pred: y_pred}, optimizer=Adam(Lr))
 
     # Train
-    model.fit(train_generator,
-              validation_data=val_generator,
-              epochs=epoch,
-              verbose=1,
-              callbacks=[checkpoint, reduce_lr])
+    if training:
+        model.fit(train_generator,
+                  validation_data=val_generator,
+                  epochs=epoch,
+                  verbose=1,
+                  callbacks=[checkpoint, reduce_lr])
+
+    # Prediction
+    else:
+        predicitons = model.predict(val_generator, verbose=1, callbacks=[mAP_callback])
 

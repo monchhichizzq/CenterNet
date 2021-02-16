@@ -5,6 +5,7 @@
 # @Software: PyCharm
 
 import numpy as np
+import tensorflow as tf
 
 # ---------------------------------------------------#
 #   获得类和先验框
@@ -29,10 +30,7 @@ def nms(results, nms):
     outputs = []
     # 对每一个图片进行处理
     for i in range(len(results)):
-        # ------------------------------------------------#
-        #   具体过程可参考
-        #   https://www.bilibili.com/video/BV1Lz411B7nQ
-        # ------------------------------------------------#
+
         detections = results[i]
         unique_class = np.unique(detections[:, -1])
 
@@ -47,6 +45,7 @@ def nms(results, nms):
             cls_mask = detections[:, -1] == c
 
             detection = detections[cls_mask]
+
             scores = detection[:, 4]
             # 根据得分对该种类进行从大到小排序。
             arg_sort = np.argsort(scores)[::-1]
@@ -103,3 +102,4 @@ def centernet_correct_boxes(top, left, bottom, right, input_shape, image_shape):
     ],axis=-1)
     boxes *= np.concatenate([image_shape, image_shape],axis=-1)
     return boxes
+

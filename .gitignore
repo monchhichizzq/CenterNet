@@ -7,7 +7,8 @@ pregraite/
 logs
 board_logs
 resnet18_centernet.h5
-
+input
+results
 
 # C extensions
 *.so

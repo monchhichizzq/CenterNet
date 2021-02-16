@@ -39,7 +39,7 @@ class Coco_DataGenerator(Sequence):
         self.batch_size = batch_size
         self.max_objects = kwargs.get('max_objects', 100)
 
-        self.data_path = kwargs.get('data_path', 'D:/Coco_dataset/coco_voc/')
+        # self.data_path = kwargs.get('data_path', 'D:/Coco_dataset/coco_voc/')
         self.annotation_path = kwargs.get('annotation_path', 'Preparation/data_txt')
         self.anno_train_txt = kwargs.get('anno_train_txt', 'coco_train.txt')
         self.anno_val_txt = kwargs.get('anno_val_txt', 'coco_val.txt')
